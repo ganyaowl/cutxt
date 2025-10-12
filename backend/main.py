@@ -4,9 +4,9 @@ from nlp.loader import load_database, load_document
 
 if __name__ == "__main__":
     import sys
-    # Example: python -m nlp.main_nlp db_path document_path
+    # Example: python -m main db_path document_path
     if len(sys.argv) != 3:
-        print("Usage: python -m nlp.main_nlp <db_path> <doc_path>")
+        print("Usage: python -m main <db_path> <doc_path>")
         sys.exit(1)
     
     db_path = sys.argv[1]
