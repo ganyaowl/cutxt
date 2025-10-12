@@ -239,3 +239,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+*.sqlite
+*.docx
+*.doc
+*.pdf
