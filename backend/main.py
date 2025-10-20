@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from starlette.responses import StreamingResponse
 import io
@@ -16,6 +17,15 @@ os.makedirs('databases', exist_ok=True)
 os.makedirs('documents', exist_ok=True)
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev servers
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Database endpoints
 
