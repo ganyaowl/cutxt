@@ -1,7 +1,7 @@
 import re
-from typing import List
 
-def preprocess_uzbek_text(text: str) -> List[str]:
+
+def preprocess_uzbek_text(text: str) -> list[str]:
     """
     Basic preprocessing for Uzbek text:
     - Convert to lowercase
@@ -12,8 +12,8 @@ def preprocess_uzbek_text(text: str) -> List[str]:
     # Lowercase
     text = text.lower()
     # Remove punctuation and numbers
-    text = re.sub(r'[^\w\s]', ' ', text)  # Keep letters and spaces
-    text = re.sub(r'\d+', '', text)  # Remove numbers
+    text = re.sub(r"[^\w\s]", " ", text)  # Keep letters and spaces
+    text = re.sub(r"\d+", "", text)  # Remove numbers
     # Simple tokenization
     tokens = text.split()
     # Remove empty tokens
