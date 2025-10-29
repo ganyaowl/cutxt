@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: cutxt-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/databases:/app/databases
+      - ./backend/documents:/app/documents
+      - ./backend/api.db:/app/api.db
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - frontend
+    networks:
+      - cutxt-network
+
+  frontend:
+    build: ./frontend
+    container_name: cutxt-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - cutxt-network
+
+networks:
+  cutxt-network:
+    driver: bridge
