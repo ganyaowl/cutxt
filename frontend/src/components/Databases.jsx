@@ -1,14 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Button, Form, ListGroup, Modal, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+} from "@mui/material";
+import { Add, Delete, Download } from "@mui/icons-material";
 
-const API_URL = 'http://localhost:8000';
+const API_URL = "http://localhost:8000";
 
 function Databases() {
   const [databases, setDatabases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [file, setFile] = useState(null);
 
   useEffect(() => {
@@ -17,11 +36,12 @@ function Databases() {
 
   const fetchDatabases = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${API_URL}/database`);
       setDatabases(response.data);
-      setLoading(false);
     } catch (error) {
-      console.error('Error fetching databases:', error);
+      console.error("Error fetching databases:", error);
+    } finally {
       setLoading(false);
     }
   };
@@ -29,87 +49,138 @@ function Databases() {
   const handleCreate = async () => {
     if (!name || !file) return;
     const formData = new FormData();
-    formData.append('name', name);
-    formData.append('file', file);
+    formData.append("name", name);
+    formData.append("file", file);
     try {
       await axios.post(`${API_URL}/database`, formData);
       setShowModal(false);
-      fetchDatabases();
-      setName('');
+      setName("");
       setFile(null);
+      fetchDatabases();
     } catch (error) {
-      console.error('Error creating database:', error);
+      console.error("Error creating database:", error);
     }
   };
 
-  const handleDownload = async (id, name) => {
+  const handleDownload = async (id, dbName) => {
     try {
-      const response = await axios.get(`${API_URL}/database/${id}`, { responseType: 'blob' });
+      const response = await axios.get(`${API_URL}/database/${id}`, {
+        responseType: "blob",
+      });
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `${name}.db`); // Assuming db file
+      link.setAttribute("download", `${dbName}.db`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
-      console.error('Error downloading database:', error);
+      console.error("Error downloading database:", error);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this database?')) {
+    if (window.confirm("Are you sure you want to delete this database?")) {
       try {
         await axios.delete(`${API_URL}/database/${id}`);
         fetchDatabases();
       } catch (error) {
-        console.error('Error deleting database:', error);
+        console.error("Error deleting database:", error);
       }
     }
   };
 
   return (
-    <div>
-      <h2>Databases</h2>
-      <Button variant="primary" onClick={() => setShowModal(true)}>Create Database</Button>
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Typography variant="h4">Databases</Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setShowModal(true)}
+        >
+          Create Database
+        </Button>
+      </Box>
       {loading ? (
-        <Spinner animation="border" />
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <CircularProgress />
+        </Box>
       ) : (
-        <ListGroup className="mt-3">
-          {databases.map(db => (
-            <ListGroup.Item key={db.id} className="d-flex justify-content-between align-items-center">
-              {db.name}
-              <div>
-                <Button variant="outline-primary" size="sm" onClick={() => handleDownload(db.id, db.name)} className="me-2">Download</Button>
-                <Button variant="outline-danger" size="sm" onClick={() => handleDelete(db.id)}>Delete</Button>
-              </div>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {databases.map((db) => (
+                <TableRow key={db.id}>
+                  <TableCell>{db.name}</TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      onClick={() => handleDownload(db.id, db.name)}
+                      color="primary"
+                    >
+                      <Download />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => handleDelete(db.id)}
+                      color="error"
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Create Database</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control type="text" value={name} onChange={e => setName(e.target.value)} />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>File</Form.Label>
-              <Form.Control type="file" onChange={e => setFile(e.target.files[0])} />
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Close</Button>
-          <Button variant="primary" onClick={handleCreate}>Create</Button>
-        </Modal.Footer>
-      </Modal>
-    </div>
+      <Dialog open={showModal} onClose={() => setShowModal(false)}>
+        <DialogTitle>Create New Database</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Database Name"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <Button variant="contained" component="label">
+            Upload File
+            <input
+              type="file"
+              hidden
+              onChange={(e) => setFile(e.target.files[0])}
+            />
+          </Button>
+          {file && (
+            <Typography sx={{ display: "inline", ml: 2 }}>
+              {file.name}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowModal(false)}>Cancel</Button>
+          <Button onClick={handleCreate}>Create</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 

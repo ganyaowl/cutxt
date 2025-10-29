@@ -1,139 +1,237 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Button, Form, ListGroup, Modal, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Switch,
+  FormControlLabel,
+} from "@mui/material";
+import { Add, Delete, Download } from "@mui/icons-material";
 
-const API_URL = 'http://localhost:8000';
+const API_URL = "http://localhost:8000";
 
 function Documents() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
   const [file, setFile] = useState(null);
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [useText, setUseText] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
   }, []);
 
+  const resetForm = () => {
+    setName("");
+    setFile(null);
+    setText("");
+    setUseText(false);
+  };
+
   const fetchDocuments = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${API_URL}/document`);
       setDocuments(response.data);
-      setLoading(false);
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      console.error("Error fetching documents:", error);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleCreate = async () => {
-    if (!name) return;
+    if (!name || (!useText && !file) || (useText && !text)) return;
     const formData = new FormData();
-    formData.append('name', name);
+    formData.append("name", name);
     if (useText) {
-      if (!text) return;
-      formData.append('text', text);
+      formData.append("text", text);
     } else {
-      if (!file) return;
-      formData.append('file', file);
+      formData.append("file", file);
     }
     try {
       await axios.post(`${API_URL}/document`, formData);
       setShowModal(false);
+      resetForm();
       fetchDocuments();
-      setName('');
-      setFile(null);
-      setText('');
-      setUseText(false);
     } catch (error) {
-      console.error('Error creating document:', error);
+      console.error("Error creating document:", error);
     }
   };
 
-  const handleDownload = async (id, name) => {
+  const handleDownload = async (id, docName) => {
     try {
-      const response = await axios.get(`${API_URL}/document/${id}`, { responseType: 'blob' });
+      const response = await axios.get(`${API_URL}/document/${id}`, {
+        responseType: "blob",
+      });
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', name); // Use name as filename
+      link.setAttribute("download", docName);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
-      console.error('Error downloading document:', error);
+      console.error("Error downloading document:", error);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this document?')) {
+    if (window.confirm("Are you sure you want to delete this document?")) {
       try {
         await axios.delete(`${API_URL}/document/${id}`);
         fetchDocuments();
       } catch (error) {
-        console.error('Error deleting document:', error);
+        console.error("Error deleting document:", error);
       }
     }
   };
 
   return (
-    <div>
-      <h2>Documents</h2>
-      <Button variant="primary" onClick={() => setShowModal(true)}>Create Document</Button>
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Typography variant="h4">Documents</Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setShowModal(true)}
+        >
+          Create Document
+        </Button>
+      </Box>
       {loading ? (
-        <Spinner animation="border" />
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <CircularProgress />
+        </Box>
       ) : (
-        <ListGroup className="mt-3">
-          {documents.map(doc => (
-            <ListGroup.Item key={doc.id} className="d-flex justify-content-between align-items-center">
-              {doc.name}
-              <div>
-                <Button variant="outline-primary" size="sm" onClick={() => handleDownload(doc.id, doc.name)} className="me-2">Download</Button>
-                <Button variant="outline-danger" size="sm" onClick={() => handleDelete(doc.id)}>Delete</Button>
-              </div>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {documents.map((doc) => (
+                <TableRow key={doc.id}>
+                  <TableCell>{doc.name}</TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      onClick={() => handleDownload(doc.id, doc.name)}
+                      color="primary"
+                    >
+                      <Download />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => handleDelete(doc.id)}
+                      color="error"
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Create Document</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control type="text" value={name} onChange={e => setName(e.target.value)} />
-            </Form.Group>
-            <Form.Check 
-              type="switch"
-              id="use-text-switch"
-              label="Use Text Instead of File"
-              checked={useText}
-              onChange={() => setUseText(!useText)}
+      <Dialog
+        open={showModal}
+        onClose={() => {
+          setShowModal(false);
+          resetForm();
+        }}
+      >
+        <DialogTitle>Create New Document</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Document Name"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            sx={{ mb: 2 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch checked={useText} onChange={() => setUseText(!useText)} />
+            }
+            label="Use Text Instead of File"
+          />
+          {useText ? (
+            <TextField
+              margin="dense"
+              label="Text Content"
+              type="text"
+              fullWidth
+              multiline
+              rows={5}
+              variant="outlined"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              sx={{ mt: 2 }}
             />
-            {useText ? (
-              <Form.Group className="mb-3">
-                <Form.Label>Text Content</Form.Label>
-                <Form.Control as="textarea" rows={5} value={text} onChange={e => setText(e.target.value)} />
-              </Form.Group>
-            ) : (
-              <Form.Group className="mb-3">
-                <Form.Label>File (PDF/DOC/DOCX)</Form.Label>
-                <Form.Control type="file" onChange={e => setFile(e.target.files[0])} accept=".pdf,.doc,.docx" />
-              </Form.Group>
-            )}
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Close</Button>
-          <Button variant="primary" onClick={handleCreate}>Create</Button>
-        </Modal.Footer>
-      </Modal>
-    </div>
+          ) : (
+            <Box sx={{ mt: 2 }}>
+              <Button variant="contained" component="label">
+                Upload File (PDF/DOC/DOCX)
+                <input
+                  type="file"
+                  hidden
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => setFile(e.target.files[0])}
+                />
+              </Button>
+              {file && (
+                <Typography sx={{ display: "inline", ml: 2 }}>
+                  {file.name}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowModal(false);
+              resetForm();
+            }}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleCreate}>Create</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 

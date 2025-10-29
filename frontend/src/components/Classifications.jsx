@@ -1,8 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Button, Form, ListGroup, Modal, Spinner, Table } from 'react-bootstrap';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
+import { Add, Delete, Visibility } from "@mui/icons-material";
 
-const API_URL = 'http://localhost:8000';
+const API_URL = "http://localhost:8000";
 
 function Classifications() {
   const [classifications, setClassifications] = useState([]);
@@ -12,8 +34,8 @@ function Classifications() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
-  const [documentId, setDocumentId] = useState('');
-  const [databaseId, setDatabaseId] = useState('');
+  const [documentId, setDocumentId] = useState("");
+  const [databaseId, setDatabaseId] = useState("");
 
   useEffect(() => {
     fetchClassifications();
@@ -21,23 +43,30 @@ function Classifications() {
     fetchDocuments();
   }, []);
 
+  const resetForm = () => {
+    setDocumentId("");
+    setDatabaseId("");
+  };
+
   const fetchClassifications = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${API_URL}/classify`);
       setClassifications(response.data);
-      setLoading(false);
     } catch (error) {
-      console.error('Error fetching classifications:', error);
+      console.error("Error fetching classifications:", error);
+    } finally {
       setLoading(false);
     }
   };
 
+  // ... (fetchDatabases and fetchDocuments remain the same)
   const fetchDatabases = async () => {
     try {
       const response = await axios.get(`${API_URL}/database`);
       setDatabases(response.data);
     } catch (error) {
-      console.error('Error fetching databases:', error);
+      console.error("Error fetching databases:", error);
     }
   };
 
@@ -46,23 +75,24 @@ function Classifications() {
       const response = await axios.get(`${API_URL}/document`);
       setDocuments(response.data);
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      console.error("Error fetching documents:", error);
     }
   };
 
   const handleCreate = async () => {
     if (!documentId || !databaseId) return;
     try {
-      const response = await axios.post(`${API_URL}/classify`, { document_id: parseInt(documentId), database_id: parseInt(databaseId) });
+      const response = await axios.post(`${API_URL}/classify`, {
+        document_id: parseInt(documentId),
+        database_id: parseInt(databaseId),
+      });
       setShowCreateModal(false);
+      resetForm();
       fetchClassifications();
-      setDocumentId('');
-      setDatabaseId('');
-      // Show the new result
       setSelectedResult(response.data.classification_result);
       setShowResultModal(true);
     } catch (error) {
-      console.error('Error creating classification:', error);
+      console.error("Error creating classification:", error);
     }
   };
 
@@ -72,119 +102,185 @@ function Classifications() {
       setSelectedResult(response.data.classification_result);
       setShowResultModal(true);
     } catch (error) {
-      console.error('Error fetching classification:', error);
+      console.error("Error fetching classification:", error);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this classification?')) {
+    if (
+      window.confirm("Are you sure you want to delete this classification?")
+    ) {
       try {
         await axios.delete(`${API_URL}/classify/${id}`);
         fetchClassifications();
       } catch (error) {
-        console.error('Error deleting classification:', error);
+        console.error("Error deleting classification:", error);
       }
     }
   };
 
   return (
-    <div>
-      <h2>Classifications</h2>
-      <Button variant="primary" onClick={() => setShowCreateModal(true)}>Create Classification</Button>
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <Typography variant="h4">Classifications</Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setShowCreateModal(true)}
+        >
+          New Classification
+        </Button>
+      </Box>
       {loading ? (
-        <Spinner animation="border" />
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <CircularProgress />
+        </Box>
       ) : (
-        <Table striped bordered hover className="mt-3">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Document ID</th>
-              <th>Database ID</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {classifications.map(classif => (
-              <tr key={classif.classification_id}>
-                <td>{classif.classification_id}</td>
-                <td>{classif.document_id}</td>
-                <td>{classif.database_id}</td>
-                <td>
-                  <Button variant="outline-primary" size="sm" onClick={() => handleView(classif.classification_id)} className="me-2">View</Button>
-                  <Button variant="outline-danger" size="sm" onClick={() => handleDelete(classif.classification_id)}>Delete</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Classification ID</TableCell>
+                <TableCell>Document ID</TableCell>
+                <TableCell>Database ID</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {classifications.map((c) => (
+                <TableRow key={c.classification_id}>
+                  <TableCell>{c.classification_id}</TableCell>
+                  <TableCell>{c.document_id}</TableCell>
+                  <TableCell>{c.database_id}</TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      onClick={() => handleView(c.classification_id)}
+                      color="primary"
+                    >
+                      <Visibility />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => handleDelete(c.classification_id)}
+                      color="error"
+                    >
+                      <Delete />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Create Classification</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Document</Form.Label>
-              <Form.Select value={documentId} onChange={e => setDocumentId(e.target.value)}>
-                <option value="">Select Document</option>
-                {documents.map(doc => (
-                  <option key={doc.id} value={doc.id}>{doc.name} (ID: {doc.id})</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Database</Form.Label>
-              <Form.Select value={databaseId} onChange={e => setDatabaseId(e.target.value)}>
-                <option value="">Select Database</option>
-                {databases.map(db => (
-                  <option key={db.id} value={db.id}>{db.name} (ID: {db.id})</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowCreateModal(false)}>Close</Button>
-          <Button variant="primary" onClick={handleCreate}>Create</Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Create Modal */}
+      <Dialog
+        open={showCreateModal}
+        onClose={() => {
+          setShowCreateModal(false);
+          resetForm();
+        }}
+        fullWidth
+      >
+        <DialogTitle>Create New Classification</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Document</InputLabel>
+            <Select
+              value={documentId}
+              label="Document"
+              onChange={(e) => setDocumentId(e.target.value)}
+            >
+              {documents.map((doc) => (
+                <MenuItem key={doc.id} value={doc.id}>
+                  {doc.name} (ID: {doc.id})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Database</InputLabel>
+            <Select
+              value={databaseId}
+              label="Database"
+              onChange={(e) => setDatabaseId(e.target.value)}
+            >
+              {databases.map((db) => (
+                <MenuItem key={db.id} value={db.id}>
+                  {db.name} (ID: {db.id})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setShowCreateModal(false);
+              resetForm();
+            }}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleCreate}>Create</Button>
+        </DialogActions>
+      </Dialog>
 
-      <Modal show={showResultModal} onHide={() => setShowResultModal(false)} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Classification Result</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
+      {/* Result Modal */}
+      <Dialog
+        open={showResultModal}
+        onClose={() => setShowResultModal(false)}
+        maxWidth="md"
+      >
+        <DialogTitle>Classification Result</DialogTitle>
+        <DialogContent>
           {selectedResult && (
-            <div>
-              <p><strong>Predicted Category:</strong> {selectedResult.predicted_category}</p>
-              <p><strong>Confidence:</strong> {selectedResult.confidence.toFixed(2)}</p>
-              <h5>Scores per Category:</h5>
-              <Table striped bordered hover>
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(selectedResult.all_scores).map(([category, score]) => (
-                    <tr key={category}>
-                      <td>{category}</td>
-                      <td>{score.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+            <Box>
+              <Typography variant="h6">
+                Predicted Category:{" "}
+                <strong>{selectedResult.predicted_category}</strong>
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                Confidence:{" "}
+                <strong>{selectedResult.confidence.toFixed(2)}</strong>
+              </Typography>
+              <TableContainer component={Paper}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Category</TableCell>
+                      <TableCell align="right">Score</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {Object.entries(selectedResult.all_scores).map(
+                      ([category, score]) => (
+                        <TableRow key={category}>
+                          <TableCell>{category}</TableCell>
+                          <TableCell align="right">
+                            {score.toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      ),
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
           )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowResultModal(false)}>Close</Button>
-        </Modal.Footer>
-      </Modal>
-    </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowResultModal(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 
