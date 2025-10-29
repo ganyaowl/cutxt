@@ -10,7 +10,9 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p databases documents
+RUN mkdir -p databases documents && \
+    touch api.db && \
+    chmod 666 api.db
 
 EXPOSE 8000
 
