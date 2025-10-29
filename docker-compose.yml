@@ -5,9 +5,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/databases:/app/databases
-      - ./backend/documents:/app/documents
-      - ./backend/api.db:/app/api.db
+      - ./backend:/app
+      - db-data:/data
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
@@ -31,3 +30,6 @@ services:
 networks:
   cutxt-network:
     driver: bridge
+
+volumes:
+  db-data:
