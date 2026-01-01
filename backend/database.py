@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from models import Base
 
 # Setup database engine
+# for manual run change to "sqlite:///api.db"
 ENGINE = create_engine("sqlite:////data/api.db")
 
 # Create all tables
