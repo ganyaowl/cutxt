@@ -9,6 +9,10 @@ services:
       - db-data:/data
     environment:
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=sqlite:////data/api.db
+      - CORS_ORIGINS=*
+      - MAX_UPLOAD_BYTES=52428800
+      - ML_MODEL_PATH=/app/models/ml_classifier.joblib
     depends_on:
       - frontend
     networks:
