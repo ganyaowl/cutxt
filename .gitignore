@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+frontend/.vite
 dist
 dist-ssr
 *.local
@@ -249,3 +250,7 @@ __marimo__/
 
 databases/
 documents/
+
+# Local venvs used for CI checks
+.venv-ci/
+.venv-ci2/
