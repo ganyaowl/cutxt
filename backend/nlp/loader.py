@@ -1,19 +1,13 @@
-import sqlite3
 import pandas as pd
 from docx import Document
-import pdfplumber  # For PDF text extraction; install with pip install pdfplumber
+import pdfplumber
+
+from nlp.reference_db import load_database_validated
 
 
 def load_database(db_path: str):
-    """
-    Load the SQLite database and return DataFrames for tables and keys.
-    Assumes database has 'tables' and 'keys' tables as per the structure.
-    """
-    conn = sqlite3.connect(db_path)
-    tables_df = pd.read_sql_query("SELECT * FROM tables", conn)
-    keys_df = pd.read_sql_query("SELECT * FROM keys", conn)
-    conn.close()
-    return tables_df, keys_df
+    """Load reference SQLite with schema validation (tables + keys)."""
+    return load_database_validated(db_path)
 
 
 def extract_text_from_docx(file_path: str) -> str:
