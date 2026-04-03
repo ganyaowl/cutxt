@@ -3,7 +3,7 @@
 Веб-приложение для классификации текстов и документов (PDF, DOCX). Два режима:
 
 - **Словарь (эталон)** — сопоставление с загруженной SQLite-эталонной базой.
-- **ML** — TF-IDF + логистическая регрессия (демо-модель в репозитории; при необходимости переобучается на своём CSV).
+- **ML** — либо CPU demo на `scikit-learn` (TF-IDF + логистическая регрессия), либо transformer-модель, обученная на GPU в Google Colab и запускаемая в API на CPU.
 
 Стек: **FastAPI** + **SQLAlchemy** (метаданные в SQLite), **React** + **Vite** + **Mantine**.
 
@@ -27,7 +27,7 @@ docker compose up --build
 
 Данные метаданных API в Compose хранятся в volume `db-data` (путь в контейнере задаётся `DATABASE_URL`).
 
-Переменные окружения бэкенда (см. `docker-compose.yml`): `DATABASE_URL`, `CORS_ORIGINS`, `MAX_UPLOAD_BYTES`, `ML_MODEL_PATH` (по умолчанию в образе ожидается `/app/models/ml_classifier.joblib` при монтировании `./backend`).
+Переменные окружения бэкенда (см. `docker-compose.yml`): `DATABASE_URL`, `CORS_ORIGINS`, `MAX_UPLOAD_BYTES`, `ML_MODEL_PATH` (необязательно; если не задана, API сначала ищет `backend/models/transformer_classifier`, затем `backend/models/ml_classifier.joblib`).
 
 ## Локальный запуск (два терминала)
 
@@ -65,17 +65,62 @@ VITE_API_URL=http://localhost:8000
 
 ## ML-модель
 
-В репозитории лежит демо-артефакт `backend/models/ml_classifier.joblib`. API подхватывает его при старте (или файл по пути `ML_MODEL_PATH`). Статус: `GET /ml/status`.
+В репозитории **не хранятся** реальные датасеты и натренированные модели. После клонирования проект стартует, но ML-режим будет недоступен, пока вы не положите свою модель в `backend/models/` или не зададите `ML_MODEL_PATH`.
 
-Переобучение на своих данных (колонки `text`, `label` в CSV):
+API умеет загружать два типа ML-артефактов:
+
+- `backend/models/transformer_classifier/` — каталог с `meta.json`, tokenizer files и transformer-весами.
+- `backend/models/ml_classifier.joblib` — fallback на `scikit-learn`.
+
+Статус активной модели: `GET /ml/status`.
+
+### Формат обучающего CSV
+
+```bash
+text,label
+"Пример текста документа 1",class_a
+"Пример текста документа 2",class_b
+```
+
+В репозитории есть шаблон: `backend/data/train_dataset.csv.example`.
+
+### Рекомендуемый путь: transformer-модель
+
+Готовый ноутбук: `notebooks/train_transformer_colab.ipynb`.
+
+Новый trainer сохраняет transformer-модель каталогом:
 
 ```bash
 cd backend
 source .venv/bin/activate
-python -m ml.train --data data/train_sample.csv --out models/ml_classifier.joblib
+python -m ml.train_transformer --data data/your_dataset.csv --out-dir models/transformer_classifier
 ```
 
-После замены файла **перезапустите** процесс `uvicorn` (или контейнер бэкенда).
+Если модель лежит в `backend/models/transformer_classifier`, API подхватит её автоматически. Иначе укажите путь через `ML_MODEL_PATH`:
+
+```bash
+ML_MODEL_PATH=models/transformer_classifier
+```
+
+Что делает новый pipeline:
+
+- использует `distilbert-base-multilingual-cased`;
+- оставляет текст почти сырым: trim + нормализация пробелов;
+- объединяет метки с `<10` примерами в `Other`;
+- делит датасет в пропорции `80/10/10`;
+- сохраняет `meta.json`, `label_mapping.json` и `metrics.json`.
+
+После обучения **перезапустите** `uvicorn` или контейнер бэкенда.
+
+### Альтернатива: scikit-learn demo
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m ml.train --data data/train_dataset.csv.example --out models/ml_classifier.joblib
+```
+
+Этот путь CPU-only и подходит скорее для быстрых локальных экспериментов.
 
 ## Сборка фронтенда для продакшена
 

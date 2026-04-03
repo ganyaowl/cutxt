@@ -2,13 +2,14 @@
 Обучение ML-классификатора: CSV с колонками text, label (UTF-8).
 
 Пример:
-  cd backend && python -m ml.train --data data/train_sample.csv --out models/ml_classifier.joblib
+  cd backend && python -m ml.train --data data/train_dataset.csv.example --out models/ml_classifier.joblib
 """
 
 from __future__ import annotations
 
 import argparse
 import os
+from collections import Counter
 
 import joblib
 import pandas as pd
@@ -52,11 +53,15 @@ def train_from_csv(csv_path: str) -> tuple[Pipeline, dict]:
         solver="lbfgs",
     )
 
-    min_per_class = min(sum(1 for y in labels if y == c) for c in set(labels))
-    calibrated = n_samples >= 12 and min_per_class >= 2
+    label_counts = Counter(labels)
+    min_per_class = min(label_counts.values())
+    calibration_cv: int | None = None
+    if n_samples >= 12 and min_per_class >= 2:
+        calibration_cv = min(5, max(2, n_samples // 4), min_per_class)
+
+    calibrated = calibration_cv is not None
     if calibrated:
-        cv = min(5, max(2, n_samples // 4))
-        clf = CalibratedClassifierCV(base_lr, method="sigmoid", cv=cv)
+        clf = CalibratedClassifierCV(base_lr, method="sigmoid", cv=calibration_cv)
     else:
         clf = base_lr
 
@@ -66,8 +71,10 @@ def train_from_csv(csv_path: str) -> tuple[Pipeline, dict]:
     meta = {
         "version": "1.0",
         "calibrated": calibrated,
+        "calibration_cv": calibration_cv,
         "train_samples": n_samples,
         "num_labels": n_classes,
+        "min_samples_per_label": min_per_class,
     }
     return pipe, meta
 
