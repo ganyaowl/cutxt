@@ -251,6 +251,13 @@ __marimo__/
 databases/
 documents/
 
+# Local training data and model artifacts
+backend/data/*
+!backend/data/.gitkeep
+!backend/data/*.example
+backend/models/*
+!backend/models/.gitkeep
+
 # Local venvs used for CI checks
 .venv-ci/
 .venv-ci2/

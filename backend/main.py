@@ -233,7 +233,10 @@ def create_classification(request: ClassifyRequest, db: Session = Depends(get_db
         if not ml_status()["available"]:
             raise HTTPException(
                 status_code=503,
-                detail="ML-модель не загружена. Обучите: python -m ml.train --data data/train_sample.csv --out models/ml_classifier.joblib",
+                detail=(
+                    "ML-модель не загружена. Сохраните обученную transformer-модель в "
+                    "models/transformer_classifier или задайте путь через ML_MODEL_PATH."
+                ),
             )
         text = _load_document_text(doc_entry)
         try:

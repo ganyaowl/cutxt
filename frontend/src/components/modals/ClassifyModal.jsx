@@ -55,7 +55,7 @@ export function ClassifyModal({
             }
             data={[
               { label: "Эталон (словарь)", value: "dictionary" },
-              { label: "ML (TF‑IDF + LR)", value: "ml" },
+              { label: "ML", value: "ml" },
             ]}
           />
         </div>
@@ -66,11 +66,12 @@ export function ClassifyModal({
         )}
         {!isDict && !mlAvailable && (
           <Alert variant="light" color="red" title="ML-модель недоступна">
-            На сервере нет файла модели. В каталоге backend выполните:{" "}
+            На сервере нет активной ML-модели. Сохраните обученную модель в{" "}
             <Text span ff="monospace" size="xs">
-              python -m ml.train --data data/train_sample.csv --out models/ml_classifier.joblib
+              backend/models/transformer_classifier
             </Text>{" "}
-            и перезапустите API.
+            или задайте путь через переменную окружения <Text span ff="monospace" size="xs">ML_MODEL_PATH</Text>, затем
+            перезапустите API.
           </Alert>
         )}
         <Select
@@ -115,8 +116,7 @@ export function ClassifyModal({
         />
         {!isDict && mlAvailable && (
           <Text size="xs" c="dimmed">
-            Классы задаются обучающей выборкой (CSV). Вероятности калибруются при достаточном объёме
-            данных.
+            Классы и вероятности зависят от активной обученной ML-модели, загруженной на сервере.
           </Text>
         )}
         <Group justify="flex-end" mt="md">
